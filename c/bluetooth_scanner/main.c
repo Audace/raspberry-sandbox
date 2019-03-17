@@ -65,10 +65,16 @@ int main(int argc, char **argv)
 	  exit(1);
 	}
 	
-	len = 8; // Length of time in s (* 1.24) to wait for inquiry results
-	max_rsp = 255; // Maximum number of devices to be returned
-	flags = IREQ_CACHE_FLUSH; // Flush cache of previously found devices
-	ii = (inquiry_info*)malloc(max_rsp * sizeof(inquiry_info)); // Alloc enough memory for max_resp
+	/*
+	 * len: Time in seconds to wait for inq results (x 1.24)
+	 * max_rsp: Max number of devices to be returned
+	 * IREQ_CACHE_FLUSH: Flush cache of previously found devices
+	 * malloc: Used to alloc enough memory for max # of responses
+	*/
+	len = 8;
+	max_rsp = 255;
+	flags = IREQ_CACHE_FLUSH;
+	ii = (inquiry_info*)malloc(max_rsp * sizeof(inquiry_info));
 	
 	printf("Searching for bluetooth devices...\n");
 	num_rsp = hci_inquiry(dev_id, len, max_rsp, NULL, &ii, flags);
@@ -76,15 +82,19 @@ int main(int argc, char **argv)
 	
 	if (num_rsp < 0) perror("HCI Inquiry");
 	
+	/*
+	 * Iterate through all responses and print out addr and name of
+	 * devices.
+	*/
 	for (i = 0; i < num_rsp; i++) {
-		ba2str(&(ii+i)->bdaddr, addr); // Convert bdaddr to string and set addr
-		memset(name, 0, sizeof(name)); // Overwrite value of name to all 0's
+		ba2str(&(ii+i)->bdaddr, addr); // Convert bdaddr to string
+		memset(name, 0, sizeof(name)); // Reset value of name to 0's
 		if (hci_read_remote_name(sock, &(ii+i)->bdaddr, sizeof(name), 
 		    name, 0) < 0) strcpy(name, "[unknown]");
-		printf("%s  %s\n", addr, name); // Print out addr and name for device found
+		printf("%s  %s\n", addr, name);
 	}
 	
-	free( ii ); // Free memory from inquiry information
+	free( ii ); // Free memory for inquiry information alloc
 	close( sock ); // Close socket to microcontroller
 	return 0;
 }
